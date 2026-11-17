@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}My Cart - Smart Canteen{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <h1>Your Cart</h1>
+    <p class="text-muted">Review your selected items before choosing a pickup slot and payment method.</p>
+</div>
+
+<div class="row" style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+    <div>
+        <div id="cart-empty-state" class="card" style="display: none;">
+            <div class="card-body text-center" style="padding: 3rem 1rem;">
+                <h3>Your cart is empty 🛒</h3>
+                <p class="text-muted" style="margin: 0.75rem 0;">Browse our delicious offerings and add your favorites!</p>
+                <a href="{{ url_for('student.menu_view') }}" class="btn btn-primary">Browse Menu</a>
+            </div>
+        </div>
+
+        <div id="cart-items-container">
+            <!-- Populated dynamically by cart.js -->
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3>Order Summary</h3>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;">
+                    <span>Total Amount:</span>
+                    <strong id="cart-total-amount" style="font-size: 1.35rem; color: var(--secondary);">₹0.00</strong>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                    Taxes included. Pickup slots can be chosen in the next step.
+                </p>
+                <a id="proceed-checkout-btn" href="{{ url_for('student.checkout_view') }}" class="btn btn-primary" style="width: 100%;">
+                    Proceed to Checkout &rarr;
+                </a>
+            </div>
+            <div class="card-footer text-center">
+                <button type="button" class="btn btn-outline btn-sm" onclick="Cart.clear(); renderCartPage();">
+                    Clear Entire Cart
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

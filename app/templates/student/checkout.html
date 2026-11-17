@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Checkout - Smart Canteen{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <h1>Checkout & Pickup</h1>
+    <p class="text-muted">Select your preferred pickup window and choose a mock payment option.</p>
+</div>
+
+<div class="row" style="display: grid; grid-template-columns: 3fr 2fr; gap: 1.5rem;">
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3>1. Select Pickup Time Slot</h3>
+            </div>
+            <div class="card-body">
+                <form id="checkout-form" method="POST" action="{{ url_for('student.checkout_view') }}">
+                    <input type="hidden" name="cart_data" id="cart_data_input">
+                    <!-- Unique submission token to prevent duplicate submits -->
+                    <input type="hidden" name="idempotency_key" id="idempotency_key" value="">
+
+                    <div class="form-group">
+                        <label class="form-label">Available Pickup Windows (Maximum capacity enforced)</label>
+                        <div style="display: flex; flex-direction: column; gap: 0.65rem; margin-top: 0.5rem;">
+                            {% for slot in slots %}
+                                <label style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; cursor: {% if slot.is_full %}not-allowed{% else %}pointer{% endif %}; background: {% if slot.is_full %}#f8fafc{% else %}#ffffff{% endif %}; opacity: {% if slot.is_full %}0.6{% else %}1{% endif %};">
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <input type="radio" name="pickup_slot" value="{{ slot.slot_time }}" {% if slot.is_full %}disabled{% elif loop.first %}checked{% endif %} required>
+                                        <span style="font-weight: 600;">{{ slot.slot_time }}</span>
+                                    </div>
+                                    <div>
+                                        {% if slot.is_full %}
+                                            <span class="badge badge-cancelled">Slot Full ({{ slot.booked_count }}/{{ slot.max_orders }})</span>
+                                        {% else %}
+                                            <span class="badge badge-ready">{{ slot.available_spots }} spots left</span>
+                                        {% endif %}
+                                    </div>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="card-header" style="margin: 1.5rem -1.25rem 1rem -1.25rem; border-top: 1px solid var(--border-color);">
+                        <h3>2. Mock Payment Method</h3>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+                            <!-- Wallet -->
+                            <label style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <input type="radio" name="payment_method" value="Wallet" checked>
+                                    <div>
+                                        <span style="font-weight: 600;">Student Wallet</span>
+                                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Instant debit from college balance</div>
+                                    </div>
+                                </div>
+                                <span class="badge badge-placed">Balance: ₹{{ "%.2f"|format(user.wallet_balance) }}</span>
+                            </label>
+
+                            <!-- UPI -->
+                            <label style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <input type="radio" name="payment_method" value="UPI">
+                                    <div>
+                                        <span style="font-weight: 600;">Mock UPI / QR</span>
+                                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Simulates instant UPI success (GPay / PhonePe)</div>
+                                    </div>
+                                </div>
+                                <span class="badge badge-ready">Instant</span>
+                            </label>
+
+                            <!-- Cash on Pickup -->
+                            <label style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <input type="radio" name="payment_method" value="Cash on Pickup">
+                                    <div>
+                                        <span style="font-weight: 600;">Cash on Pickup</span>
+                                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Pay physically at canteen counter</div>
+                                    </div>
+                                </div>
+                                <span class="badge badge-accepted">Pay Later</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="place-order-submit-btn" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 0.85rem; font-size: 1.05rem;">
+                        Confirm & Place Order
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3>Order Items</h3>
+            </div>
+            <div class="card-body">
+                <div id="checkout-summary-list">
+                    <!-- Populated dynamically by cart.js -->
+                </div>
+                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1rem 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 600;">Total Payable:</span>
+                    <span id="checkout-total-val" style="font-size: 1.4rem; font-weight: 700; color: var(--secondary);">₹0.00</span>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('student.cart_view') }}" class="btn btn-outline btn-sm">&larr; Edit Cart</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Generate unique idempotency token on checkout page load
+    document.getElementById("idempotency_key").value = "chk_" + Date.now() + "_" + Math.random().toString(36).substring(2, 9);
+</script>
+{% endblock %}

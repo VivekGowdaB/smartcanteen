@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Canteen Menu - Smart Canteen{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <h1 style="font-size: 1.85rem; margin-bottom: 0.5rem;">Canteen Menu</h1>
+    <p class="text-muted">Browse items, customize your order, and pick up fresh from the canteen counter.</p>
+</div>
+
+<!-- Search & Category Filters -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('student.menu_view') }}" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            {% if selected_category %}
+                <input type="hidden" name="category_id" value="{{ selected_category }}">
+            {% endif %}
+            <input type="text" name="q" class="form-control" placeholder="Search dishes, snacks, beverages..." value="{{ search_query }}" style="flex: 1; min-width: 200px;">
+            <button type="submit" class="btn btn-primary">Search</button>
+            {% if search_query or selected_category %}
+                <a href="{{ url_for('student.menu_view') }}" class="btn btn-outline">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="category-pills">
+    <a href="{{ url_for('student.menu_view', q=search_query if search_query else None) }}" class="category-pill {% if not selected_category %}active{% endif %}">
+        All Categories
+    </a>
+    {% for cat in categories %}
+        <a href="{{ url_for('student.menu_view', category_id=cat.id, q=search_query if search_query else None) }}" class="category-pill {% if selected_category == cat.id %}active{% endif %}">
+            {{ cat.name }} ({{ cat.items|length }})
+        </a>
+    {% endfor %}
+</div>
+
+<!-- Menu Grid -->
+{% if items %}
+    <div class="menu-grid">
+        {% for item in items %}
+            <div class="menu-card">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <h3 class="menu-card-title">{{ item.name }}</h3>
+                        <span class="badge" style="background-color: #f1f5f9; color: var(--text-secondary); font-size: 0.75rem;">
+                            {{ item.category.name }}
+                        </span>
+                    </div>
+                    <p class="menu-card-desc">{{ item.description }}</p>
+                </div>
+
+                <div>
+                    <div class="menu-card-meta">
+                        <span class="item-price">₹{{ "%.2f"|format(item.price) }}</span>
+                        {% if not item.is_available or item.stock == 0 %}
+                            <span class="stock-tag stock-out">Sold Out</span>
+                        {% elif item.stock <= 5 %}
+                            <span class="stock-tag stock-low">Only {{ item.stock }} left</span>
+                        {% else %}
+                            <span class="stock-tag stock-in">In Stock ({{ item.stock }})</span>
+                        {% endif %}
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">⏱️ ~{{ item.prep_time_minutes }}m</span>
+                        <div style="flex: 1;"></div>
+                        {% if item.is_available and item.stock > 0 %}
+                            <button type="button" class="btn btn-primary btn-sm" onclick="Cart.addItem({{ item.id }}, '{{ item.name }}', {{ item.price }}, {{ item.stock }})">
+                                + Add to Cart
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-secondary btn-sm" disabled>
+                                Unavailable
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card">
+        <div class="card-body text-center" style="padding: 3rem 1rem;">
+            <h3>No menu items found</h3>
+            <p class="text-muted">Try adjusting your search or category filter.</p>
+            <a href="{{ url_for('student.menu_view') }}" class="btn btn-outline" style="margin-top: 1rem;">View All Items</a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

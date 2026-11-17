@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id }} Status - Smart Canteen{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="display: flex; align-items: center; gap: 0.75rem;">
+            Order #{{ order.id }}
+            <span id="order-status-pill" class="badge badge-{{ order.status|lower }}">{{ order.status }}</span>
+        </h1>
+        <p class="text-muted">
+            Placed on {{ order.created_at.strftime('%b %d, %Y at %I:%M %p') }} &bull; Live updates active (polls every 5s)
+        </p>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <span style="font-size: 0.8rem; color: var(--text-secondary);">Last checked: <span id="last-polled-time">Just now</span></span>
+        <a href="{{ url_for('student.history_view') }}" class="btn btn-outline btn-sm">All Orders</a>
+    </div>
+</div>
+
+<!-- Order Stepper -->
+<div class="card">
+    <div class="card-body">
+        <div id="order-stepper" class="stepper">
+            <div id="step-placed" class="step-item">
+                <div class="step-circle">1</div>
+                <div class="step-label">Placed</div>
+            </div>
+            <div id="step-accepted" class="step-item">
+                <div class="step-circle">2</div>
+                <div class="step-label">Accepted</div>
+            </div>
+            <div id="step-preparing" class="step-item">
+                <div class="step-circle">3</div>
+                <div class="step-label">Preparing</div>
+            </div>
+            <div id="step-ready" class="step-item">
+                <div class="step-circle">4</div>
+                <div class="step-label">Ready for Pickup</div>
+            </div>
+            <div id="step-collected" class="step-item">
+                <div class="step-circle">5</div>
+                <div class="step-label">Collected</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Metrics & Tracking Details -->
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-label">Estimated Wait Time</div>
+        <div id="estimated-wait-val" class="metric-val" style="color: var(--primary);">
+            {% if order.status in ['Collected', 'Cancelled'] %}
+                --
+            {% else %}
+                {{ order.estimated_wait_minutes }} mins
+            {% endif %}
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Queue Position</div>
+        <div id="queue-pos-val" class="metric-val" style="color: var(--accent);">
+            {% if queue_position > 0 %}
+                #{{ queue_position }}
+            {% else %}
+                -
+            {% endif %}
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Pickup Window</div>
+        <div class="metric-val" style="font-size: 1.15rem; color: var(--secondary);">
+            {{ order.pickup_slot }}
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Payment</div>
+        <div class="metric-val" style="font-size: 1.15rem;">
+            {{ order.payment_method }}
+            <span class="badge badge-{% if order.payment_status == 'Paid' %}ready{% elif order.payment_status == 'Refunded' %}cancelled{% else %}accepted{% endif %}" style="font-size: 0.75rem; vertical-align: middle;">
+                {{ order.payment_status }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Order Items & Bill Details -->
+<div class="card">
+    <div class="card-header">
+        <h3>Items in this Order</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Portions</th>
+                    <th>Unit Price</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items %}
+                    <tr>
+                        <td><strong>{{ item.menu_item.name if item.menu_item else "Item" }}</strong></td>
+                        <td>{{ item.quantity }}</td>
+                        <td>₹{{ "%.2f"|format(item.unit_price) }}</td>
+                        <td>₹{{ "%.2f"|format(item.subtotal) }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="font-size: 1.05rem; background-color: #f8fafc;">
+                    <th colspan="3" style="text-align: right;">Total Amount:</th>
+                    <th style="color: var(--secondary);">₹{{ "%.2f"|format(order.total_amount) }}</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+            <!-- Cancellation allowed only when Placed or Accepted -->
+            <form id="cancel-order-form" method="POST" action="{{ url_for('student.cancel_order_view', order_id=order.id) }}" style="display: {% if order.status in ['Placed', 'Accepted'] %}inline-block{% else %}none{% endif %};" onsubmit="return confirm('Are you sure you want to cancel this order? Any wallet debits will be refunded immediately.');">
+                <button type="submit" class="btn btn-danger btn-sm">Cancel Order</button>
+            </form>
+            {% if order.status in ['Preparing', 'Ready', 'Collected'] %}
+                <span class="text-muted" style="font-size: 0.85rem;">
+                    * Cannot cancel: food preparation has already begun or completed.
+                </span>
+            {% endif %}
+        </div>
+
+        <button type="button" class="btn btn-primary btn-sm" onclick="reorderItems({{ order.to_dict()['items']|tojson }})">
+            🔄 Reorder These Items
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/live_order.js') }}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        initLiveOrderPolling({{ order.id }}, "{{ order.status }}");
+    });
+
+    function reorderItems(items) {
+        if (!items || items.length === 0) return;
+        items.forEach(it => {
+            Cart.addItem(it.menu_item_id, it.item_name, it.unit_price, 99);
+        });
+        window.location.href = "{{ url_for('student.cart_view') }}";
+    }
+</script>
+{% endblock %}

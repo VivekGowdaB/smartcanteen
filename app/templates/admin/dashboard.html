@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Sales Analytics - Smart Canteen{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1>📊 Sales & Operations Analytics</h1>
+        <p class="text-muted">Review revenue metrics, order velocity, item popularity, and download audit CSVs.</p>
+    </div>
+    <div>
+        <a href="{{ url_for('admin.export_sales_csv', date=selected_date) }}" class="btn btn-primary">
+            📥 Download Sales CSV
+        </a>
+    </div>
+</div>
+
+<!-- Date Filter Card -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('admin.dashboard') }}" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+                <label class="form-label" for="date">Select Specific Date</label>
+                <input type="date" name="date" id="date" class="form-control" value="{{ selected_date }}">
+            </div>
+            <button type="submit" class="btn btn-primary">Filter</button>
+            {% if selected_date %}
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline">View All-Time</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Summary Metrics -->
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-label">Total Orders ({{ summary.date }})</div>
+        <div class="metric-val" style="color: var(--secondary);">{{ summary.total_orders }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Total Revenue Collected</div>
+        <div class="metric-val" style="color: var(--success);">₹{{ "%.2f"|format(summary.total_revenue) }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Cancelled Orders</div>
+        <div class="metric-val" style="color: var(--danger);">{{ summary.cancelled_count }}</div>
+    </div>
+</div>
+
+<div class="row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+    <!-- Order Status Breakdown -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Orders by Status</h3>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+                {% for status, count in summary.status_counts.items() %}
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="badge badge-{{ status|lower }}">{{ status }}</span>
+                        <strong style="font-size: 1.05rem;">{{ count }}</strong>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Methods Breakdown -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Payment Method Distribution</h3>
+        </div>
+        <div class="card-body">
+            {% if summary.payment_counts %}
+                <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+                    {% for method, count in summary.payment_counts.items() %}
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 500;">{{ method }}</span>
+                            <span class="badge" style="background-color: #f1f5f9; color: var(--secondary); font-size: 0.9rem;">
+                                {{ count }} orders
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted text-center" style="padding: 1.5rem;">No orders recorded for this period.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Top Selling Items -->
+<div class="card">
+    <div class="card-header">
+        <h3>🏆 Top Selling Dishes</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Item Name</th>
+                    <th>Portions Sold</th>
+                    <th>Gross Revenue Generated</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if summary.top_items %}
+                    {% for item in summary.top_items %}
+                        <tr>
+                            <td><strong>{{ item.name }}</strong></td>
+                            <td>{{ item.sold }}</td>
+                            <td style="color: var(--success); font-weight: 600;">₹{{ "%.2f"|format(item.revenue) }}</td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted" style="padding: 2rem;">No sales data available.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
