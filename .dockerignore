@@ -1,0 +1,35 @@
+# Git
+.git/
+.gitignore
+.github/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+reports/
+
+# Database and instances
+*.db
+*.sqlite3
+instance/
+
+# Documentation and project notes
+docs/
+implementation_plan.md
+README.md
+
+# IDEs
+.vscode/
+.idea/

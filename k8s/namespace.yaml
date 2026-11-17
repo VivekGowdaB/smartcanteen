@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: smart-canteen
+  labels:
+    app.kubernetes.io/name: smart-canteen
+    app.kubernetes.io/part-of: smart-canteen-ordering-system
