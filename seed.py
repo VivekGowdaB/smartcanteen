@@ -1,4 +1,6 @@
 """Database seeder script for Smart Canteen Ordering System."""
+import argparse
+import os
 import sys
 from datetime import datetime, timezone
 
@@ -18,10 +20,15 @@ from app.services.order_service import DEFAULT_SLOTS
 
 
 def seed_database():
-    app = create_app("development")
+    return _seed_database(reset=True)
+
+
+def _seed_database(reset):
+    app = create_app(os.environ.get("FLASK_ENV", "development"))
     with app.app_context():
-        print("[*] Dropping and recreating all database tables...")
-        db.drop_all()
+        if reset:
+            print("[*] Dropping and recreating all database tables...")
+            db.drop_all()
         db.create_all()
 
         print("[*] Seeding pickup slot configurations...")
@@ -119,5 +126,27 @@ def seed_database():
         print("-------------------------------------------------------")
 
 
+def seed_if_empty():
+    app = create_app(os.environ.get("FLASK_ENV", "development"))
+    with app.app_context():
+        db.create_all()
+        models = (User, Category, MenuItem, PickupSlotConfig, Order, OrderItem)
+        if any(db.session.query(model).first() for model in models):
+            print("[*] Existing database data detected; skipping demo seed.")
+            return
+
+    _seed_database(reset=False)
+
+
 if __name__ == "__main__":
-    seed_database()
+    parser = argparse.ArgumentParser(description="Seed the Smart Canteen database.")
+    parser.add_argument(
+        "--if-empty",
+        action="store_true",
+        help="Seed demo data only when the database contains no records."
+    )
+    arguments = parser.parse_args()
+    if arguments.if_empty:
+        seed_if_empty()
+    else:
+        seed_database()

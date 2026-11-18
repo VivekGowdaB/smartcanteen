@@ -218,9 +218,8 @@ If Kubernetes is unavailable during your project evaluation, you can deploy the 
 ### Option A: Render.com (Recommended)
 1. Push this repository to GitHub.
 2. In [Render.com](https://render.com), select **New +** $\rightarrow$ **Blueprint** and connect the repository.
-3. Render reads `render.yaml` and creates the Python web service. It installs `requirements.txt`, runs Gunicorn on Render's assigned `$PORT`, and checks `/health`.
+3. Render reads `render.yaml` and creates the Python web service. It installs `requirements.txt`, seeds demo data only when the database is empty, runs Gunicorn on Render's assigned `$PORT`, and checks `/health`.
 4. The Blueprint generates a production `SECRET_KEY`; do not set `PORT` manually.
-5. After the first deploy, initialize the empty database from the service Shell with `python seed.py` if demo accounts and menu items are needed. **This script drops and recreates all tables**, so only run it against a new/empty database.
 
 The default SQLite database is ephemeral on Render and can be lost when the service restarts or redeploys. For persistent production data, create a Render PostgreSQL database and set the web service's `DATABASE_URL` to its **internal** connection URL. The app creates its tables at startup and supports Render's `postgres://` URL format. Back up or migrate any existing data before switching databases.
 
