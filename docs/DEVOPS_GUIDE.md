@@ -87,6 +87,7 @@ docker run -d \
   -e SECRET_KEY=my-docker-secret-key \
   smart-canteen:1.0.1
 ```
+The container seeds demo data before starting Gunicorn only when the database is empty. Existing data is not reset.
 
 ### 2.3 Verify Container Health & Logs
 ```powershell

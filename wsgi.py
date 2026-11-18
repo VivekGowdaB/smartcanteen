@@ -7,11 +7,10 @@ from app.extensions import db
 env_name = os.environ.get("FLASK_ENV", "development")
 app = create_app(env_name)
 
-# Ensure database tables exist upon startup
-with app.app_context():
-    db.create_all()
-
 if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
+
     port = int(os.environ.get("PORT", 5000))
     host = os.environ.get("HOST", "0.0.0.0")
 

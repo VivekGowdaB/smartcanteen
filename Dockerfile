@@ -57,4 +57,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('PORT', '5000') + '/health')"
 
 # Production WSGI server
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --timeout 60 --access-logfile - --error-logfile - wsgi:app"]
+CMD ["sh", "-c", "python seed.py --if-empty && exec gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --timeout 60 --access-logfile - --error-logfile - wsgi:app"]

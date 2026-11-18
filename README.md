@@ -149,6 +149,8 @@ docker run -d -p 5000:5000 --name smart-canteen-app smart-canteen:1.0.1
 curl http://localhost:5000/health
 ```
 
+The container seeds demo data before starting Gunicorn only when the database is empty. Existing data is not reset.
+
 ---
 
 ## ☸️ Kubernetes Deployment
