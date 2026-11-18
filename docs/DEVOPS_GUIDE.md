@@ -216,18 +216,15 @@ service/smart-canteen-service   NodePort   10.108.140.22   <none>        5000:30
 If Kubernetes is unavailable during your project evaluation, you can deploy the Docker container to a free-tier cloud platform in under 3 minutes.
 
 ### Option A: Render.com (Recommended)
-1. Fork or push this repository to GitHub.
-2. Sign in to [Render.com](https://render.com) and click **New +** $\rightarrow$ **Web Service**.
-3. Connect your GitHub repository.
-4. Configure service settings:
-   - **Environment**: `Docker`
-   - **Dockerfile Path**: `Dockerfile`
-   - **Instance Type**: `Free`
-5. Add Environment Variables:
-   - `FLASK_ENV`: `production`
-   - `SECRET_KEY`: `generate-a-random-secure-string-here`
-   - `PORT`: `5000`
-6. Click **Create Web Service**. Render automatically builds the multi-stage Dockerfile and provisions a live HTTPS URL (e.g. `https://smart-canteen.onrender.com`).
+1. Push this repository to GitHub.
+2. In [Render.com](https://render.com), select **New +** $\rightarrow$ **Blueprint** and connect the repository.
+3. Render reads `render.yaml` and creates the Python web service. It installs `requirements.txt`, runs Gunicorn on Render's assigned `$PORT`, and checks `/health`.
+4. The Blueprint generates a production `SECRET_KEY`; do not set `PORT` manually.
+5. After the first deploy, initialize the empty database from the service Shell with `python seed.py` if demo accounts and menu items are needed. **This script drops and recreates all tables**, so only run it against a new/empty database.
+
+The default SQLite database is ephemeral on Render and can be lost when the service restarts or redeploys. For persistent production data, create a Render PostgreSQL database and set the web service's `DATABASE_URL` to its **internal** connection URL. The app creates its tables at startup and supports Render's `postgres://` URL format. Back up or migrate any existing data before switching databases.
+
+To deploy the Docker image instead, create a Render Web Service using the Docker runtime and the repository's `Dockerfile`; it also binds to the dynamically assigned `PORT`.
 
 ### Option B: Railway.app
 1. Navigate to [Railway.app](https://railway.app) and click **New Project** $\rightarrow$ **Deploy from GitHub repo**.

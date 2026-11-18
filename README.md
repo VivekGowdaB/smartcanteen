@@ -169,6 +169,16 @@ Access via NodePort at `http://<CLUSTER_IP>:30080`.
 
 ---
 
+## ☁️ Deploy to Render
+
+1. Push the repository to GitHub, then select **New + → Blueprint** in Render and connect it.
+2. Render uses [`render.yaml`](render.yaml) to build the Python service and run Gunicorn on its assigned port. A production `SECRET_KEY` is generated automatically.
+3. The app creates its database tables on startup. To load the demo accounts and menu, run `python seed.py` from the service Shell on a new database only; this script drops and recreates all tables.
+
+Render's default SQLite filesystem is ephemeral. For persistent data, connect a Render PostgreSQL database and set `DATABASE_URL` to its internal connection URL. Do not configure `PORT` yourself.
+
+---
+
 ## 👥 Demo Credentials for Viva Evaluation
 
 | Role | Username | Password | Notes |
